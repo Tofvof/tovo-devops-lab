@@ -1,0 +1,41 @@
+services:
+  backend:
+    build: ./app
+    container_name: tovo-backend
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: tovo-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: tovo-grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - tovo-grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  tovo-grafana-data:
+    external: true
+
+  prometheus-data:
+    external: true
+    name: 0c907924b3a65ac814be74c3ecd1e44c7d814a8e23f07da5ed42e0959f4a0f3a
