@@ -30,3 +30,10 @@ jobs:
       - name: Check backend syntax
         working-directory: ./app
         run: node --check index.js
+      - name: Check backend syntax
+        working-directory: ./app
+        run: node --check index.js
+
+      - name: Run automated tests
+        working-directory: ./app
+        run: npm test
