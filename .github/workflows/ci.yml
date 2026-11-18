@@ -1,5 +1,4 @@
-
-name: To Vo DevOps CI
+name: To Vo DevOps CI/CD
 
 on:
   push:
@@ -13,6 +12,9 @@ on:
 jobs:
   backend-test:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout source code
@@ -35,6 +37,18 @@ jobs:
         working-directory: ./app
         run: npm test
 
+  build-and-push:
+    needs: backend-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -50,3 +64,33 @@ jobs:
           context: ./app
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/tovo-backend:latest
+
+  deploy:
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 10
+
+    steps:
+      - name: Pull new Docker image and deploy
+        shell: bash
+        run: |
+          cd "$HOME/tovo-devops-project"
+          docker compose pull backend
+          docker compose up -d --no-deps backend
+
+      - name: Verify backend health
+        shell: bash
+        run: |
+          cd "$HOME/tovo-devops-project"
+
+          for i in {1..10}; do
+            if curl -fsS http://127.0.0.1:3000/health; then
+              echo
+              exit 0
+            fi
+            sleep 3
+          done
+
+          docker compose logs --tail=50 backend
+          exit 1

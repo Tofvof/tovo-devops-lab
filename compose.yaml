@@ -1,6 +1,6 @@
 services:
   backend:
-    build: ./app
+    image: tofvof/tovo-backend:latest
     container_name: tovo-backend
     ports:
       - "3000:3000"
